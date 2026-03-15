@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { PIECES } from './pieces/aurora.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const SCALE = 18;
@@ -10,35 +11,7 @@ const SNAP_THRESH = 10;
 const CHAIN_COLORS = ["#f59e0b","#38bdf8","#a78bfa","#34d399","#fb7185","#fb923c","#e879f9","#4ade80"];
 const SLOT_OFFSET = [0.75, 2.25]; // inches from outside edge
 
-// ─── Pieces ───────────────────────────────────────────────────────────────────
-const PIECES = [
-  {id:"s3",     label:'Straight 3"',    type:"straight",length_in:3,  elev:0,tags:["common","straight"]},
-  {id:"s6",     label:'Straight 6"',    type:"straight",length_in:6,  elev:0,tags:["common","straight"]},
-  {id:"s9",     label:'Straight 9"',    type:"straight",length_in:9,  elev:0,tags:["common","straight"]},
-  {id:"s12",    label:'Straight 12"',   type:"straight",length_in:12, elev:0,tags:["straight"]},
-  {id:"c3-45L", label:'Curve 3" 45° L', type:"curve",r:3, a:45,turn:"L",elev:0,tags:["common","curve"]},
-  {id:"c3-45R", label:'Curve 3" 45° R', type:"curve",r:3, a:45,turn:"R",elev:0,tags:["common","curve"]},
-  {id:"c3-90L", label:'Curve 3" 90° L', type:"curve",r:3, a:90,turn:"L",elev:0,tags:["curve"]},
-  {id:"c3-90R", label:'Curve 3" 90° R', type:"curve",r:3, a:90,turn:"R",elev:0,tags:["curve"]},
-  {id:"c6-45L", label:'Curve 6" 45° L', type:"curve",r:6, a:45,turn:"L",elev:0,tags:["common","curve"]},
-  {id:"c6-45R", label:'Curve 6" 45° R', type:"curve",r:6, a:45,turn:"R",elev:0,tags:["common","curve"]},
-  {id:"c6-90L", label:'Curve 6" 90° L', type:"curve",r:6, a:90,turn:"L",elev:0,tags:["curve"]},
-  {id:"c6-90R", label:'Curve 6" 90° R', type:"curve",r:6, a:90,turn:"R",elev:0,tags:["curve"]},
-  {id:"c9-45L", label:'Curve 9" 45° L', type:"curve",r:9, a:45,turn:"L",elev:0,tags:["curve"]},
-  {id:"c9-45R", label:'Curve 9" 45° R', type:"curve",r:9, a:45,turn:"R",elev:0,tags:["curve"]},
-  {id:"c9-90L", label:'Curve 9" 90° L', type:"curve",r:9, a:90,turn:"L",elev:0,tags:["curve"]},
-  {id:"c9-90R", label:'Curve 9" 90° R', type:"curve",r:9, a:90,turn:"R",elev:0,tags:["curve"]},
-  {id:"c12-45L",label:'Curve 12" 45° L',type:"curve",r:12,a:45,turn:"L",elev:0,tags:["curve"]},
-  {id:"c12-45R",label:'Curve 12" 45° R',type:"curve",r:12,a:45,turn:"R",elev:0,tags:["curve"]},
-  {id:"c12-90L",label:'Curve 12" 90° L',type:"curve",r:12,a:90,turn:"L",elev:0,tags:["curve"]},
-  {id:"c12-90R",label:'Curve 12" 90° R',type:"curve",r:12,a:90,turn:"R",elev:0,tags:["curve"]},
-  {id:"c15-45L",label:'Curve 15" 45° L',type:"curve",r:15,a:45,turn:"L",elev:0,tags:["curve"]},
-  {id:"c15-45R",label:'Curve 15" 45° R',type:"curve",r:15,a:45,turn:"R",elev:0,tags:["curve"]},
-  {id:"c18-45L",label:'Curve 18" 45° L',type:"curve",r:18,a:45,turn:"L",elev:0,tags:["curve"]},
-  {id:"c18-45R",label:'Curve 18" 45° R',type:"curve",r:18,a:45,turn:"R",elev:0,tags:["curve"]},
-  {id:"ru",label:"Ramp Up",  type:"ramp",length_in:9,elev:3, tags:["ramp","elevation"]},
-  {id:"rd",label:"Ramp Down",type:"ramp",length_in:9,elev:-3,tags:["ramp","elevation"]},
-];
+
 
 // ─── Geometry ─────────────────────────────────────────────────────────────────
 const d2r = d => d * Math.PI / 180;
