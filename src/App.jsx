@@ -54,14 +54,14 @@ function isClosed(conns) {
   const ad = ((f.angleDeg - l.angleDeg) % 360 + 360) % 360;
   return Math.hypot(f.x-l.x, f.y-l.y) < LOOP_TOL && (ad < 2 || ad > 358);
 }
+
 // ─── Hit Testing ──────────────────────────────────────────────────────────────
 // Returns true if world point (wx,wy) is inside a straight/ramp piece
 function hitStraight(wx, wy, entry, exit, angleDeg) {
   const ar = d2r(angleDeg);
   const len = Math.hypot(exit.x - entry.x, exit.y - entry.y);
-  // Transform point into piece-local space
   const dx = wx - entry.x, dy = wy - entry.y;
-  const along =  dx * Math.cos(ar) + dy * Math.sin(ar);
+  const along = dx * Math.cos(ar) + dy * Math.sin(ar);
   const perp  = -dx * Math.sin(ar) + dy * Math.cos(ar);
   return along >= -0.2 && along <= len + 0.2 && Math.abs(perp) <= TRACK_WIDTH / 2 + 0.2;
 }
@@ -95,7 +95,6 @@ function hitCurve(wx, wy, entry, piece) {
 
 // Find which piece (if any) was clicked. Returns {trackIdx, pieceIdx} or null.
 function hitTestPieces(wx, wy, tracks, marker) {
-  // Test active track first (on top), then others
   const order = [...tracks.keys()];
   for (const ci of order) {
     const origin = trackOrigin(marker, ci);
@@ -114,9 +113,7 @@ function hitTestPieces(wx, wy, tracks, marker) {
   return null;
 }
 
-
-
-// Per-track origin: offset perpendicular to start marker direction
+// ─── Track Origin ─────────────────────────────────────────────────────────────
 function trackOrigin(marker, trackIdx) {
   const ar = d2r(marker.angleDeg);
   const perpX = -Math.sin(ar), perpY = Math.cos(ar);
@@ -131,14 +128,11 @@ function trackOrigin(marker, trackIdx) {
 function allLaneLengths(tracks, marker) {
   const result = [];
   tracks.forEach((track, ci) => {
-    const origin = trackOrigin(marker, ci);
     let l1 = 0, l2 = 0;
     for (const p of track.pieces) {
       if (p.type === "straight" || p.type === "ramp") { l1 += p.length_in; l2 += p.length_in; }
       else if (p.type === "curve") {
         const rad = d2r(p.a);
-        // For a right turn, lane 1 (offset 0.75 from outside) is the outer lane — longer arc.
-        // For a left turn, the outside edge flips, so lane 2 becomes outer — lane 1 gets shorter arc.
         if (p.turn === "R") {
           l1 += Math.max(0, p.r - 0.75) * rad;
           l2 += Math.max(0, p.r - 2.25) * rad;
@@ -258,7 +252,6 @@ function drawCanvas(canvas, tracks, marker, markerPlaced, table, vp, activeTrack
           ctx.strokeStyle=li===0?color:color+"aa"; ctx.lineWidth=2; ctx.stroke();
           ctx.beginPath(); ctx.arc(scx+Math.cos(startA)*sr,scy+Math.sin(startA)*sr,2.5,0,Math.PI*2);
           ctx.fillStyle=li===0?color:color+"aa"; ctx.fill();
-          ctx.fillStyle=li===0?color:color+"aa"; ctx.fill();
         });
         if (entry.elevIn > 0) {
           ctx.beginPath();
@@ -296,7 +289,7 @@ function drawCanvas(canvas, tracks, marker, markerPlaced, table, vp, activeTrack
           ctx.closePath();
           ctx.strokeStyle="#fff"; ctx.lineWidth=2.5; ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]);
         } else if (piece.type === "curve") {
-          const ts2=piece.turn==="L"?1:-1;
+          const ts2=piece.turn==="L"?-1:1;
           const tcr=piece.r-TRACK_WIDTH/2;
           const pa=ar+ts2*Math.PI/2;
           const cx=entry.x+Math.cos(pa)*tcr,cy=entry.y+Math.sin(pa)*tcr;
@@ -335,7 +328,7 @@ function drawCanvas(canvas, tracks, marker, markerPlaced, table, vp, activeTrack
       ctx.restore();
     }
 
-    ctx.restore(); // alpha
+    ctx.restore();
   });
 
   // Start marker
@@ -378,7 +371,6 @@ function drawCanvas(canvas, tracks, marker, markerPlaced, table, vp, activeTrack
     ctx.restore();
   }
 }
-
 
 // ─── BOM ──────────────────────────────────────────────────────────────────────
 function BOM({tracks}) {
@@ -505,12 +497,11 @@ export default function App() {
   const pendingRef = useRef(null);
   const prevSegIdx = useRef(null);
 
-  // ── Layout state ────────────────────────────────────────────────────────────
+  // ── Layout state ──────────────────────────────────────────────────────────
   const [tracks, setTracks] = useState([mkTrack(0)]);
   const [activeTrack, setActiveTrack] = useState(0);
   const [marker, setMarker] = useState({x:20, y:15, angleDeg:0});
   const [markerPlaced, setMarkerPlaced] = useState(false);
-  const [placingMarker, setPlacingMarker] = useState(false);
   const [draggingMarker, setDraggingMarker] = useState(false);
 
   const [table, setTable] = useState([[0,0],[108,0],[108,60],[0,60]]);
@@ -518,12 +509,12 @@ export default function App() {
   const [filter, setFilter] = useState("common");
   const [layoutName, setLayoutName] = useState("My Layout");
 
-  // ── Viewport ────────────────────────────────────────────────────────────────
+  // ── Viewport ──────────────────────────────────────────────────────────────
   const [vp, setVp] = useState({zoom:1, px:40, py:40});
   const [panning, setPanning] = useState(false);
   const [panStart, setPanStart] = useState(null);
 
-  // ── Table drawing ────────────────────────────────────────────────────────────
+  // ── Table drawing ─────────────────────────────────────────────────────────
   const [tMode, setTMode] = useState(false);
   const [draft, setDraft] = useState([]);
   const [mPos, setMPos] = useState(null);
@@ -532,12 +523,11 @@ export default function App() {
   const [snapAng, setSnapAng] = useState(null);
   const [pendSeg, setPendSeg] = useState(null);
   const [editSide, setEditSide] = useState(null);
-  // Selected piece for replace/remove
-  const [selectedPiece, setSelectedPiece] = useState(null); // {trackIdx, pieceIdx, screenX, screenY}
-  const [popupMode, setPopupMode] = useState("replace"); // "replace" | "add"
-  const [popupTypeFilter, setPopupTypeFilter] = useState(null); // null = all, or "straight"/"curve"/"ramp"
+  const [selectedPiece, setSelectedPiece] = useState(null);
+  const [popupMode, setPopupMode] = useState("replace");
+  const [popupTypeFilter, setPopupTypeFilter] = useState(null);
 
-  // ── Presets ─────────────────────────────────────────────────────────────────
+  // ── Presets ───────────────────────────────────────────────────────────────
   const BUILTIN_PRESETS = [
     {name:'Ping Pong (108"×60")', polygon:[[0,0],[108,0],[108,60],[0,60]]},
     {name:'Card Table (34"×34")', polygon:[[0,0],[34,0],[34,34],[0,34]]},
@@ -553,9 +543,7 @@ export default function App() {
   const [showPresets, setShowPresets] = useState(false);
   const [presetNameInput, setPresetNameInput] = useState("");
 
-  // ── helpers ─────────────────────────────────────────────────────────────────
-  // Convert canvas-relative CSS pixels to world inches.
-  // Uses the canvas's actual pixel:CSS ratio to correct for any scaling.
+  // ── Helpers ───────────────────────────────────────────────────────────────
   const s2w = useCallback((sx,sy)=>{
     const c = canvasRef.current;
     const scaleX = c ? c.width / c.offsetWidth : 1;
@@ -565,6 +553,7 @@ export default function App() {
       y: (sy * scaleY - vp.py) / (SCALE * vp.zoom),
     };
   },[vp]);
+
   const w2s = useCallback((wx,wy)=>({sx:wx*SCALE*vp.zoom+vp.px, sy:wy*SCALE*vp.zoom+vp.py}),[vp]);
 
   const getSnap = useCallback((raw,d)=>{
@@ -583,44 +572,26 @@ export default function App() {
     return {pt:raw,snapped:false};
   },[draft]);
 
-  // Check if click is near the start marker (in world coords)
   const nearMarker = useCallback((wx,wy)=>{
     if(!markerPlaced) return false;
     return Math.hypot(wx-marker.x, wy-marker.y) < 1.2;
   },[markerPlaced,marker]);
 
-  // ── resize ───────────────────────────────────────────────────────────────────
+  // ── Resize ────────────────────────────────────────────────────────────────
   useEffect(()=>{
     const resize=()=>{const c=canvasRef.current;if(!c)return;c.width=c.parentElement.clientWidth;c.height=c.parentElement.clientHeight;};
     resize(); window.addEventListener("resize",resize); return()=>window.removeEventListener("resize",resize);
   },[]);
 
-  // ── render ───────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
   useEffect(()=>{
     const canvas=canvasRef.current; if(!canvas) return;
     drawCanvas(canvas,tracks,marker,markerPlaced,table,vp,activeTrack,selectedPiece);
 
-    if(!tMode&&!placingMarker) return;
+    if(!tMode) return;
     const ctx=canvas.getContext("2d");
     const toS=(wx,wy)=>({sx:wx*SCALE*vp.zoom+vp.px,sy:wy*SCALE*vp.zoom+vp.py});
 
-    // Placing marker mode overlay
-    if(placingMarker&&mPos) {
-      ctx.save();
-      ctx.strokeStyle="#fff"; ctx.lineWidth=1; ctx.setLineDash([4,3]);
-      ctx.beginPath(); ctx.moveTo(mPos.sx-12,mPos.sy); ctx.lineTo(mPos.sx+12,mPos.sy); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(mPos.sx,mPos.sy-12); ctx.lineTo(mPos.sx,mPos.sy+12); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.font="bold 11px monospace"; ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.textBaseline="top";
-      ctx.fillStyle="rgba(15,23,42,0.8)"; ctx.fillRect(mPos.sx-80,mPos.sy+16,160,22);
-      ctx.fillStyle="#38bdf8"; ctx.fillText("Click to place start marker",mPos.sx,mPos.sy+20);
-      ctx.restore();
-      return;
-    }
-
-    if(!tMode) return;
-
-    // Table drawing overlay
     let prevScr=null;
     if(mPos&&draft.length>0&&!pendSeg)
       prevScr=snapPt?toS(snapPt.x,snapPt.y):mPos;
@@ -665,9 +636,9 @@ export default function App() {
     ctx.font="bold 11px monospace";ctx.textAlign="left";ctx.textBaseline="middle";
     ctx.fillText(msg,16,25);
     ctx.restore();
-  },[tracks,marker,markerPlaced,table,vp,activeTrack,selectedPiece,tMode,placingMarker,draft,mPos,snapPt,isSnapped,snapAng,pendSeg,w2s]);
+  },[tracks,marker,markerPlaced,table,vp,activeTrack,selectedPiece,tMode,draft,mPos,snapPt,isSnapped,snapAng,pendSeg,w2s]);
 
-  // ── focus pending input ──────────────────────────────────────────────────────
+  // ── Focus pending input ───────────────────────────────────────────────────
   useEffect(()=>{
     const curIdx=pendSeg?pendSeg.si:null;
     if(curIdx!==null&&curIdx!==prevSegIdx.current&&pendingRef.current){
@@ -676,7 +647,7 @@ export default function App() {
     prevSegIdx.current=curIdx;
   },[pendSeg?.si]);
 
-  // ── track actions ────────────────────────────────────────────────────────────
+  // ── Track actions ─────────────────────────────────────────────────────────
   const addPiece = useCallback(p=>{
     setTracks(prev=>prev.map((c,i)=>i===activeTrack?{...c,pieces:[...c.pieces,p]}:c));
     setShowQP(false);
@@ -709,7 +680,7 @@ export default function App() {
     setMarkerPlaced(false); setShowQP(false);
   };
 
-  // ── table drawing ────────────────────────────────────────────────────────────
+  // ── Table drawing ─────────────────────────────────────────────────────────
   const applyLen=(d,seg,val)=>{
     const len=parseFloat(val);
     if(!isNaN(len)&&len>0){
@@ -730,7 +701,7 @@ export default function App() {
 
   const cancelTable=()=>{setTMode(false);setDraft([]);setMPos(null);setSnapPt(null);setIsSnapped(false);setSnapAng(null);setPendSeg(null);};
 
-  // ── keyboard ─────────────────────────────────────────────────────────────────
+  // ── Keyboard ──────────────────────────────────────────────────────────────
   useEffect(()=>{
     const h=e=>{
       if(tMode){
@@ -742,8 +713,9 @@ export default function App() {
     window.addEventListener("keydown",h); return()=>window.removeEventListener("keydown",h);
   },[tMode,draft,pendSeg,finishDraft]);
 
-  // ── mouse ────────────────────────────────────────────────────────────────────
+  // ── Mouse ─────────────────────────────────────────────────────────────────
   const onDown=e=>{
+    // Table drawing mode
     if(tMode){
       if(e.button!==0) return;
       if(pendSeg){const nd=applyLen(draft,pendSeg,pendSeg.value);setDraft(nd);setPendSeg(null);return;}
@@ -761,21 +733,25 @@ export default function App() {
       }
       return;
     }
-    if(placingMarker){
-      if(e.button!==0) return;
+
+    if(e.button===0&&!e.altKey){
       const rect=canvasRef.current.getBoundingClientRect();
       const w=s2w(e.clientX-rect.left,e.clientY-rect.top);
-      setMarker(m=>({...m,x:w.x,y:w.y}));
-      setMarkerPlaced(true);
-      setPlacingMarker(false);
-      return;
-    }
-    // Check click on a track piece (left click, not alt)
-    if(e.button===0&&!e.altKey&&markerPlaced&&!tMode&&!placingMarker){
-      const rect=canvasRef.current.getBoundingClientRect();
-      const w=s2w(e.clientX-rect.left,e.clientY-rect.top);
-      // Marker drag takes priority
-      if(nearMarker(w.x,w.y)){setDraggingMarker(true);return;}
+
+      // First-time placement: clicking anywhere drops the marker
+      if(!markerPlaced){
+        setMarker(m=>({...m,x:w.x,y:w.y}));
+        setMarkerPlaced(true);
+        return;
+      }
+
+      // Marker drag takes priority over piece selection
+      if(nearMarker(w.x,w.y)){
+        setDraggingMarker(true);
+        return;
+      }
+
+      // Hit test pieces
       const hit=hitTestPieces(w.x,w.y,tracks,marker);
       if(hit){
         const conns=buildConnectors(tracks[hit.trackIdx].pieces,trackOrigin(marker,hit.trackIdx));
@@ -788,25 +764,19 @@ export default function App() {
         setActiveTrack(hit.trackIdx);
         return;
       }
+
       // Click on empty canvas dismisses selection
       setSelectedPiece(null);
       return;
     }
-    // Check drag on marker
-    if(e.button===0&&markerPlaced){
-      const rect=canvasRef.current.getBoundingClientRect();
-      const w=s2w(e.clientX-rect.left,e.clientY-rect.top);
-      if(nearMarker(w.x,w.y)){setDraggingMarker(true);return;}
-    }
+
     if(e.button===1||(e.button===0&&e.altKey)){
       setPanning(true);
-      {
-        const rect3=canvasRef.current?.getBoundingClientRect();
-        const c3=canvasRef.current;
-        const sX3=c3?c3.width/c3.offsetWidth:1,sY3=c3?c3.height/c3.offsetHeight:1;
-        const csx=(e.clientX-rect3.left)*sX3, csy=(e.clientY-rect3.top)*sY3;
-        setPanStart({x:csx-vp.px,y:csy-vp.py});
-      }
+      const rect=canvasRef.current?.getBoundingClientRect();
+      const c=canvasRef.current;
+      const sX=c?c.width/c.offsetWidth:1, sY=c?c.height/c.offsetHeight:1;
+      const csx=(e.clientX-rect.left)*sX, csy=(e.clientY-rect.top)*sY;
+      setPanStart({x:csx-vp.px,y:csy-vp.py});
     }
   };
 
@@ -814,7 +784,7 @@ export default function App() {
     const rect=canvasRef.current?.getBoundingClientRect();
     if(!rect) return;
     const sx=e.clientX-rect.left,sy=e.clientY-rect.top;
-    if(tMode||placingMarker) setMPos({sx,sy});
+    if(tMode) setMPos({sx,sy});
     if(tMode){
       const raw=s2w(sx,sy);
       const{pt,snapped,snapAngle}=getSnap(raw);
@@ -826,55 +796,41 @@ export default function App() {
       return;
     }
     if(panning&&panStart){
-      const rect4=canvasRef.current?.getBoundingClientRect();
-      const c4=canvasRef.current;
-      const sX4=c4?c4.width/c4.offsetWidth:1,sY4=c4?c4.height/c4.offsetHeight:1;
-      const csx4=(e.clientX-rect4.left)*sX4,csy4=(e.clientY-rect4.top)*sY4;
-      setVp(v=>({...v,px:csx4-panStart.x,py:csy4-panStart.y}));
+      const c=canvasRef.current;
+      const sX=c?c.width/c.offsetWidth:1, sY=c?c.height/c.offsetHeight:1;
+      const csx=(e.clientX-rect.left)*sX, csy=(e.clientY-rect.top)*sY;
+      setVp(v=>({...v,px:csx-panStart.x,py:csy-panStart.y}));
     }
   };
 
   const onUp=()=>{setPanning(false);setPanStart(null);setDraggingMarker(false);};
+
   const onWheel=e=>{
     e.preventDefault();
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const c = canvasRef.current;
-    const scaleX = c ? c.width / c.offsetWidth : 1;
-    const scaleY = c ? c.height / c.offsetHeight : 1;
-    const mouseX = (e.clientX - rect.left) * scaleX;
-    const mouseY = (e.clientY - rect.top) * scaleY;
-    const factor = e.deltaY < 0 ? 1.1 : 0.9;
-    setVp(v => {
-      const newZoom = Math.max(0.2, Math.min(5, v.zoom * factor));
-      // Keep the world point under the cursor stationary:
-      // worldX = (mouseX - px) / (SCALE * zoom)  =>  px = mouseX - worldX * SCALE * zoom
-      const worldX = (mouseX - v.px) / (SCALE * v.zoom);
-      const worldY = (mouseY - v.py) / (SCALE * v.zoom);
-      return {
-        zoom: newZoom,
-        px: mouseX - worldX * SCALE * newZoom,
-        py: mouseY - worldY * SCALE * newZoom,
-      };
+    const rect=canvasRef.current?.getBoundingClientRect();
+    if(!rect) return;
+    const c=canvasRef.current;
+    const scaleX=c?c.width/c.offsetWidth:1, scaleY=c?c.height/c.offsetHeight:1;
+    const mouseX=(e.clientX-rect.left)*scaleX, mouseY=(e.clientY-rect.top)*scaleY;
+    const factor=e.deltaY<0?1.1:0.9;
+    setVp(v=>{
+      const newZoom=Math.max(0.2,Math.min(5,v.zoom*factor));
+      const worldX=(mouseX-v.px)/(SCALE*v.zoom);
+      const worldY=(mouseY-v.py)/(SCALE*v.zoom);
+      return {zoom:newZoom, px:mouseX-worldX*SCALE*newZoom, py:mouseY-worldY*SCALE*newZoom};
     });
   };
 
-  // ── derived ──────────────────────────────────────────────────────────────────
+  // ── Derived ───────────────────────────────────────────────────────────────
   const activePieces = tracks[activeTrack]?.pieces || [];
-
   const laneData = markerPlaced ? allLaneLengths(tracks,marker) : [];
   const allClosed = markerPlaced && tracks.every(c=>{
     if(!c.pieces.length) return false;
     const origin=trackOrigin(marker,tracks.indexOf(c));
     return isClosed(buildConnectors(c.pieces,origin));
   });
-  const anyClosed = markerPlaced && tracks.some(c=>{
-    if(!c.pieces.length) return false;
-    const origin=trackOrigin(marker,tracks.indexOf(c));
-    return isClosed(buildConnectors(c.pieces,origin));
-  });
 
-  // ── file ops ─────────────────────────────────────────────────────────────────
+  // ── File ops ──────────────────────────────────────────────────────────────
   const saveFile=()=>{
     const data={version:2,library:"Aurora",name:layoutName,
       table:{polygon_in:table},
@@ -898,7 +854,6 @@ export default function App() {
           setTracks(d.tracks.map((c,i)=>({id:i,label:c.label||`Track ${i+1}`,pieces:(c.pieces||[]).map(p=>PIECES.find(l=>l.id===p.id)).filter(Boolean)})));
           setActiveTrack(0);
         } else if(d.layout?.pieces){
-          // backwards compat with v1
           setTracks([{id:0,label:"Track 1",pieces:(d.layout.pieces||[]).map(p=>PIECES.find(l=>l.id===p.id)).filter(Boolean)}]);
           setActiveTrack(0);
         }
@@ -908,8 +863,7 @@ export default function App() {
   };
 
   const exportBOM=()=>{
-    const rows = [];
-    // BOM summary
+    const rows=[];
     rows.push("BILL OF MATERIALS");
     rows.push("Piece,Count");
     const c={};
@@ -931,8 +885,8 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const Btn=({children,onClick,active,color,disabled})=>(
-      <button onClick={onClick} disabled={disabled} style={{background:active?(color?`rgba(${color},0.15)`:"rgba(29,78,216,0.2)"):"#1e293b",border:`1px solid ${active?(color?`rgb(${color})`:"#3b82f6"):"#334155"}`,borderRadius:4,padding:"4px 10px",color:disabled?"#334155":active?(color?`rgb(${color})`:"#60a5fa"):"#94a3b8",fontSize:11,fontFamily:"monospace",cursor:disabled?"default":"pointer"}}>{children}</button>
+  const Btn=({children,onClick,active,color,disabled,title})=>(
+      <button title={title} onClick={onClick} disabled={disabled} style={{background:active?(color?`rgba(${color},0.15)`:"rgba(29,78,216,0.2)"):"#1e293b",border:`1px solid ${active?(color?`rgb(${color})`:"#3b82f6"):"#334155"}`,borderRadius:4,padding:"4px 10px",color:disabled?"#334155":active?(color?`rgb(${color})`:"#60a5fa"):"#94a3b8",fontSize:11,fontFamily:"monospace",cursor:disabled?"default":"pointer"}}>{children}</button>
   );
 
   const activeColor = TRACK_COLORS[activeTrack % TRACK_COLORS.length];
@@ -950,16 +904,18 @@ export default function App() {
           <Btn onClick={saveFile}>Save Track</Btn>
           <Btn onClick={exportBOM}>BOM CSV</Btn>
 
-          {/* Start Marker */}
-          <Btn onClick={()=>{setPlacingMarker(v=>!v);setTMode(false);}} active={placingMarker} color="56,189,248">
-            {placingMarker?"📍 Click canvas…":markerPlaced?"Move Start":"📍 Place Start"}
-          </Btn>
-          {markerPlaced && (
+          {/* Start marker — place on first click, drag to reposition thereafter */}
+          {!markerPlaced ? (
+              <Btn active color="56,189,248">
+                📍 Click canvas to place start
+              </Btn>
+          ) : (
               <div style={{display:"flex",gap:3,alignItems:"center"}}>
-                <span style={{fontSize:9,color:"#475569"}}>DIR:</span>
+                <span style={{fontSize:9,color:"#475569"}}>START:</span>
                 <button onClick={()=>setMarker(m=>({...m,angleDeg:(m.angleDeg-45+360)%360}))} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:3,padding:"2px 7px",color:"#94a3b8",fontSize:11,fontFamily:"monospace",cursor:"pointer"}}>↺</button>
                 <span style={{fontSize:10,color:"#94a3b8",minWidth:30,textAlign:"center"}}>{marker.angleDeg}°</span>
                 <button onClick={()=>setMarker(m=>({...m,angleDeg:(m.angleDeg+45)%360}))} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:3,padding:"2px 7px",color:"#94a3b8",fontSize:11,fontFamily:"monospace",cursor:"pointer"}}>↻</button>
+                <button onClick={()=>{setMarkerPlaced(false);setTracks([mkTrack(0)]);setActiveTrack(0);}} style={{background:"transparent",border:"1px solid #334155",borderRadius:3,padding:"2px 7px",color:"#ef4444",fontSize:10,fontFamily:"monospace",cursor:"pointer"}} title="Remove start marker and clear layout">✕ Reset</button>
               </div>
           )}
 
@@ -978,7 +934,7 @@ export default function App() {
           )}
 
           {/* Draw Table */}
-          <Btn onClick={()=>{if(tMode)cancelTable();else{setTMode(true);setDraft([]);setPlacingMarker(false);}}} active={tMode} color="245,158,11">
+          <Btn onClick={()=>{if(tMode)cancelTable();else{setTMode(true);setDraft([]);}}} active={tMode} color="245,158,11">
             {tMode?"✏ Drawing…":"Draw Table"}
           </Btn>
 
@@ -1067,20 +1023,14 @@ export default function App() {
                 const cx=c.width/2, cy=c.height/2;
                 setVp(v=>{const nz=Math.min(5,v.zoom*1.2);const wx=(cx-v.px)/(SCALE*v.zoom);const wy=(cy-v.py)/(SCALE*v.zoom);return{zoom:nz,px:cx-wx*SCALE*nz,py:cy-wy*SCALE*nz};});
               }}>+</Btn>
-              <Btn title="Reset view to fit table" onClick={()=>{
+              <Btn title="Fit table in view" onClick={()=>{
                 const c=canvasRef.current; if(!c) return;
-                // Fit the table polygon (or marker) into view with padding
-                const pts = table.length >= 3 ? table : markerPlaced ? [[marker.x,marker.y]] : [[0,0]];
-                const xs = pts.map(p=>p[0]), ys = pts.map(p=>p[1]);
-                const minX=Math.min(...xs), maxX=Math.max(...xs);
-                const minY=Math.min(...ys), maxY=Math.max(...ys);
-                const padX=12, padY=12;
-                const worldW = Math.max(maxX-minX, 12), worldH = Math.max(maxY-minY, 12);
-                const fitZoom = Math.min(5, Math.max(0.2,
-                    Math.min((c.width-padX*2)/(SCALE*worldW), (c.height-padY*2)/(SCALE*worldH))
-                ));
-                const centerWX=(minX+maxX)/2, centerWY=(minY+maxY)/2;
-                setVp({zoom:fitZoom, px:c.width/2-centerWX*SCALE*fitZoom, py:c.height/2-centerWY*SCALE*fitZoom});
+                const pts=table.length>=3?table:markerPlaced?[[marker.x,marker.y]]:[[0,0]];
+                const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+                const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+                const worldW=Math.max(maxX-minX,12),worldH=Math.max(maxY-minY,12);
+                const fitZoom=Math.min(5,Math.max(0.2,Math.min((c.width-24)/(SCALE*worldW),(c.height-24)/(SCALE*worldH))));
+                setVp({zoom:fitZoom,px:c.width/2-((minX+maxX)/2)*SCALE*fitZoom,py:c.height/2-((minY+maxY)/2)*SCALE*fitZoom});
               }}>⌂</Btn>
             </div>
           </div>
@@ -1093,18 +1043,18 @@ export default function App() {
           <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
             <div onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp} onWheel={onWheel}
                  style={{flex:1,position:"relative",overflow:"hidden",
-                   cursor:tMode?"crosshair":placingMarker?"crosshair":draggingMarker?"grabbing":markerPlaced&&!panning?"default":"default"}}>
+                   cursor:tMode?"crosshair":draggingMarker?"grabbing":"default"}}>
               <canvas ref={canvasRef} style={{display:"block",width:"100%",height:"100%"}}/>
 
               <div style={{position:"absolute",bottom:8,right:8,fontSize:9,color:"#334155",fontFamily:"monospace"}}>
-                Drag start marker to reposition · Alt+drag or middle-click to pan · Scroll to zoom
+                Drag start marker · Alt+drag or middle-click to pan · Scroll to zoom
               </div>
 
-              {/* No start marker prompt */}
-              {!markerPlaced&&!placingMarker&&!tMode&&(
+              {/* First-time prompt */}
+              {!markerPlaced&&!tMode&&(
                   <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center",pointerEvents:"none"}}>
-                    <div style={{fontSize:13,color:"#475569",fontFamily:"monospace",marginBottom:8}}>Click "📍 Place Start" to begin</div>
-                    <div style={{fontSize:10,color:"#334155",fontFamily:"monospace"}}>The start marker sets where all tracks begin</div>
+                    <div style={{fontSize:13,color:"#475569",fontFamily:"monospace",marginBottom:8}}>Click anywhere to place the start marker</div>
+                    <div style={{fontSize:10,color:"#334155",fontFamily:"monospace"}}>Drag it any time to reposition</div>
                   </div>
               )}
 
@@ -1123,9 +1073,8 @@ export default function App() {
                   </div>
               )}
 
-
               {/* Add / Replace / Remove piece popup */}
-              {selectedPiece && !tMode && !placingMarker && (() => {
+              {selectedPiece && !tMode && (() => {
                 const track = tracks[selectedPiece.trackIdx];
                 const piece = track?.pieces[selectedPiece.pieceIdx];
                 if (!piece) return null;
@@ -1227,6 +1176,7 @@ export default function App() {
                     </div>
                 );
               })()}
+
               {/* Quick pick */}
               {showQP&&(
                   <div style={{position:"absolute",bottom:52,left:"50%",transform:"translateX(-50%)"}}>
@@ -1235,7 +1185,7 @@ export default function App() {
               )}
 
               {/* Add/Undo */}
-              {!tMode&&!placingMarker&&markerPlaced&&(
+              {!tMode&&markerPlaced&&(
                   <div style={{position:"absolute",bottom:12,left:"50%",transform:"translateX(-50%)",display:"flex",gap:6,alignItems:"center"}}>
                     <div style={{width:10,height:10,borderRadius:"50%",background:activeColor,boxShadow:`0 0 8px ${activeColor}`}}/>
                     <span style={{fontSize:10,color:activeColor,fontFamily:"monospace"}}>{tracks[activeTrack]?.label}</span>
@@ -1280,7 +1230,6 @@ export default function App() {
                     </div>
                   </div>
               )}
-
               {tracks.some(c=>c.pieces.length>0)&&(
                   <div>
                     <div style={{fontSize:10,color:"#475569",fontFamily:"monospace",marginBottom:4}}>BILL OF MATERIALS</div>
