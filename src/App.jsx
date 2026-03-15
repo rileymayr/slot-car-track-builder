@@ -8,7 +8,7 @@ const LOOP_TOL = 0.15;
 const SNAP_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
 const SNAP_THRESH = 10;
 
-const CHAIN_COLORS = ["#f59e0b","#38bdf8","#a78bfa","#34d399","#fb7185","#fb923c","#e879f9","#4ade80"];
+const TRACK_COLORS = ["#f59e0b","#38bdf8","#a78bfa","#34d399","#fb7185","#fb923c","#e879f9","#4ade80"];
 const SLOT_OFFSET = [0.75, 2.25]; // inches from outside edge
 const ELEV_STRIPE = "#a3e635";
 
@@ -93,13 +93,13 @@ function hitCurve(wx, wy, entry, piece) {
   }
 }
 
-// Find which piece (if any) was clicked. Returns {chainIdx, pieceIdx} or null.
-function hitTestPieces(wx, wy, chains, marker) {
-  // Test active chain first (on top), then others
-  const order = [...chains.keys()];
+// Find which piece (if any) was clicked. Returns {trackIdx, pieceIdx} or null.
+function hitTestPieces(wx, wy, tracks, marker) {
+  // Test active track first (on top), then others
+  const order = [...tracks.keys()];
   for (const ci of order) {
-    const origin = chainOrigin(marker, ci);
-    const conns = buildConnectors(chains[ci].pieces, origin);
+    const origin = trackOrigin(marker, ci);
+    const conns = buildConnectors(tracks[ci].pieces, origin);
     for (let pi = conns.length - 1; pi >= 0; pi--) {
       const {entry, exit, piece} = conns[pi];
       let hit = false;
@@ -108,7 +108,7 @@ function hitTestPieces(wx, wy, chains, marker) {
       } else if (piece.type === "curve") {
         hit = hitCurve(wx, wy, entry, piece);
       }
-      if (hit) return {chainIdx: ci, pieceIdx: pi};
+      if (hit) return {trackIdx: ci, pieceIdx: pi};
     }
   }
   return null;
@@ -116,24 +116,24 @@ function hitTestPieces(wx, wy, chains, marker) {
 
 
 
-// Per-chain origin: offset perpendicular to start marker direction
-function chainOrigin(marker, chainIdx) {
+// Per-track origin: offset perpendicular to start marker direction
+function trackOrigin(marker, trackIdx) {
   const ar = d2r(marker.angleDeg);
   const perpX = -Math.sin(ar), perpY = Math.cos(ar);
   return {
-    x: marker.x + perpX * chainIdx * TRACK_WIDTH,
-    y: marker.y + perpY * chainIdx * TRACK_WIDTH,
+    x: marker.x + perpX * trackIdx * TRACK_WIDTH,
+    y: marker.y + perpY * trackIdx * TRACK_WIDTH,
     angleDeg: marker.angleDeg,
     elevIn: 0,
   };
 }
 
-function allLaneLengths(chains, marker) {
+function allLaneLengths(tracks, marker) {
   const result = [];
-  chains.forEach((chain, ci) => {
-    const origin = chainOrigin(marker, ci);
+  tracks.forEach((track, ci) => {
+    const origin = trackOrigin(marker, ci);
     let l1 = 0, l2 = 0;
-    for (const p of chain.pieces) {
+    for (const p of track.pieces) {
       if (p.type === "straight" || p.type === "ramp") { l1 += p.length_in; l2 += p.length_in; }
       else if (p.type === "curve") {
         const rad = d2r(p.a);
@@ -148,13 +148,13 @@ function allLaneLengths(chains, marker) {
         }
       }
     }
-    result.push({chainIdx: ci, l1, l2});
+    result.push({trackIdx: ci, l1, l2});
   });
   return result;
 }
 
 // ─── Canvas Draw ──────────────────────────────────────────────────────────────
-function drawCanvas(canvas, chains, marker, markerPlaced, table, vp, activeChain, selectedPiece) {
+function drawCanvas(canvas, tracks, marker, markerPlaced, table, vp, activeTrack, selectedPiece) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
@@ -183,14 +183,14 @@ function drawCanvas(canvas, chains, marker, markerPlaced, table, vp, activeChain
     ctx.restore();
   }
 
-  // Draw each chain
-  chains.forEach((chain, ci) => {
+  // Draw each track
+  tracks.forEach((track, ci) => {
     if (!markerPlaced) return;
-    const origin = chainOrigin(marker, ci);
-    const conns = buildConnectors(chain.pieces, origin);
+    const origin = trackOrigin(marker, ci);
+    const conns = buildConnectors(track.pieces, origin);
     const closed = isClosed(conns);
-    const color = CHAIN_COLORS[ci % CHAIN_COLORS.length];
-    const isActive = ci === activeChain;
+    const color = TRACK_COLORS[ci % TRACK_COLORS.length];
+    const isActive = ci === activeTrack;
     const alpha = isActive ? 1.0 : 0.45;
 
     ctx.save();
@@ -279,7 +279,7 @@ function drawCanvas(canvas, chains, marker, markerPlaced, table, vp, activeChain
     });
 
     // Highlight selected piece
-    if (selectedPiece && selectedPiece.chainIdx === ci) {
+    if (selectedPiece && selectedPiece.trackIdx === ci) {
       const si = selectedPiece.pieceIdx;
       if (si < conns.length) {
         const {entry, exit, piece} = conns[si];
@@ -343,14 +343,14 @@ function drawCanvas(canvas, chains, marker, markerPlaced, table, vp, activeChain
     const {sx,sy} = ts(marker.x,marker.y);
     const ar = d2r(marker.angleDeg);
     ctx.save();
-    // Draw parallel chain start lines
-    chains.forEach((_, ci) => {
-      const orig = chainOrigin(marker, ci);
+    // Draw parallel track start lines
+    tracks.forEach((_, ci) => {
+      const orig = trackOrigin(marker, ci);
       const {sx:ox2,sy:oy2} = ts(orig.x,orig.y);
-      const color = CHAIN_COLORS[ci % CHAIN_COLORS.length];
+      const color = TRACK_COLORS[ci % TRACK_COLORS.length];
       const perpX=-Math.sin(ar), perpY=Math.cos(ar);
       const hw=sc(TRACK_WIDTH/2);
-      // start line for this chain
+      // start line for this track
       ctx.beginPath();
       ctx.moveTo(ox2+perpX*hw, oy2+perpY*hw);
       ctx.lineTo(ox2-perpX*hw, oy2-perpY*hw);
@@ -381,10 +381,10 @@ function drawCanvas(canvas, chains, marker, markerPlaced, table, vp, activeChain
 
 
 // ─── BOM ──────────────────────────────────────────────────────────────────────
-function BOM({chains}) {
+function BOM({tracks}) {
   const c={};
-  for(const chain of chains) {
-    for(const p of chain.pieces){
+  for(const track of tracks) {
+    for(const p of track.pieces){
       const id=p.id==="rd"?"ru":p.id;
       const lbl=p.id==="rd"?"Ramp (up/down)":p.label;
       if(!c[id])c[id]={lbl,n:0}; c[id].n++;
@@ -405,23 +405,23 @@ function BOM({chains}) {
 
 
 // ─── Assembly Guide ───────────────────────────────────────────────────────────
-function AssemblyGuide({chains}) {
-  const active = chains.filter(c => c.pieces.length > 0);
+function AssemblyGuide({tracks}) {
+  const active = tracks.filter(c => c.pieces.length > 0);
   if (!active.length) return null;
   return (
       <div style={{marginTop:10}}>
         <div style={{fontSize:10,color:"#475569",fontFamily:"monospace",marginBottom:6}}>ASSEMBLY ORDER</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:12,alignItems:"flex-start"}}>
-          {active.map((chain, ci) => {
-            const color = CHAIN_COLORS[chain.id % CHAIN_COLORS.length];
+          {active.map((track, ci) => {
+            const color = TRACK_COLORS[track.id % TRACK_COLORS.length];
             return (
-                <div key={chain.id} style={{minWidth:160,flex:1}}>
+                <div key={track.id} style={{minWidth:160,flex:1}}>
                   <div style={{fontSize:10,color,fontFamily:"monospace",fontWeight:"bold",marginBottom:4,
                     borderBottom:`1px solid ${color}33`,paddingBottom:3}}>
-                    {chain.label}
+                    {track.label}
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:1}}>
-                    {chain.pieces.map((p, pi) => (
+                    {track.pieces.map((p, pi) => (
                         <div key={pi} style={{display:"flex",gap:5,alignItems:"baseline"}}>
                     <span style={{fontSize:9,color:"#475569",fontFamily:"monospace",
                       minWidth:18,textAlign:"right",flexShrink:0}}>
@@ -470,7 +470,7 @@ function QuickPick({onSelect,onClose,lastPiece}) {
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 function Palette({onAdd,filter,setFilter}) {
-  const tags=["all","common","straight","curve","ramp","elevation"];
+  const tags=["all","common","straight","curve","ramp"];
   const filtered=PIECES.filter(p=>filter==="all"||p.tags.includes(filter));
   return (
       <div style={{width:196,background:"#0f172a",borderRight:"1px solid #1e293b",display:"flex",flexDirection:"column",flexShrink:0}}>
@@ -498,7 +498,7 @@ function Palette({onAdd,filter,setFilter}) {
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
-const mkChain = (idx) => ({id: idx, label: `Chain ${idx+1}`, pieces: []});
+const mkTrack = (idx) => ({id: idx, label: `Track ${idx+1}`, pieces: []});
 
 export default function App() {
   const canvasRef = useRef(null);
@@ -506,8 +506,8 @@ export default function App() {
   const prevSegIdx = useRef(null);
 
   // ── Layout state ────────────────────────────────────────────────────────────
-  const [chains, setChains] = useState([mkChain(0)]);
-  const [activeChain, setActiveChain] = useState(0);
+  const [tracks, setTracks] = useState([mkTrack(0)]);
+  const [activeTrack, setActiveTrack] = useState(0);
   const [marker, setMarker] = useState({x:20, y:15, angleDeg:0});
   const [markerPlaced, setMarkerPlaced] = useState(false);
   const [placingMarker, setPlacingMarker] = useState(false);
@@ -533,7 +533,7 @@ export default function App() {
   const [pendSeg, setPendSeg] = useState(null);
   const [editSide, setEditSide] = useState(null);
   // Selected piece for replace/remove
-  const [selectedPiece, setSelectedPiece] = useState(null); // {chainIdx, pieceIdx, screenX, screenY}
+  const [selectedPiece, setSelectedPiece] = useState(null); // {trackIdx, pieceIdx, screenX, screenY}
   const [popupMode, setPopupMode] = useState("replace"); // "replace" | "add"
   const [popupTypeFilter, setPopupTypeFilter] = useState(null); // null = all, or "straight"/"curve"/"ramp"
 
@@ -598,7 +598,7 @@ export default function App() {
   // ── render ───────────────────────────────────────────────────────────────────
   useEffect(()=>{
     const canvas=canvasRef.current; if(!canvas) return;
-    drawCanvas(canvas,chains,marker,markerPlaced,table,vp,activeChain,selectedPiece);
+    drawCanvas(canvas,tracks,marker,markerPlaced,table,vp,activeTrack,selectedPiece);
 
     if(!tMode&&!placingMarker) return;
     const ctx=canvas.getContext("2d");
@@ -665,7 +665,7 @@ export default function App() {
     ctx.font="bold 11px monospace";ctx.textAlign="left";ctx.textBaseline="middle";
     ctx.fillText(msg,16,25);
     ctx.restore();
-  },[chains,marker,markerPlaced,table,vp,activeChain,selectedPiece,tMode,placingMarker,draft,mPos,snapPt,isSnapped,snapAng,pendSeg,w2s]);
+  },[tracks,marker,markerPlaced,table,vp,activeTrack,selectedPiece,tMode,placingMarker,draft,mPos,snapPt,isSnapped,snapAng,pendSeg,w2s]);
 
   // ── focus pending input ──────────────────────────────────────────────────────
   useEffect(()=>{
@@ -676,36 +676,36 @@ export default function App() {
     prevSegIdx.current=curIdx;
   },[pendSeg?.si]);
 
-  // ── chain actions ────────────────────────────────────────────────────────────
+  // ── track actions ────────────────────────────────────────────────────────────
   const addPiece = useCallback(p=>{
-    setChains(prev=>prev.map((c,i)=>i===activeChain?{...c,pieces:[...c.pieces,p]}:c));
+    setTracks(prev=>prev.map((c,i)=>i===activeTrack?{...c,pieces:[...c.pieces,p]}:c));
     setShowQP(false);
-  },[activeChain]);
+  },[activeTrack]);
 
   const undoLast = ()=>{
-    setChains(prev=>prev.map((c,i)=>i===activeChain?{...c,pieces:c.pieces.slice(0,-1)}:c));
+    setTracks(prev=>prev.map((c,i)=>i===activeTrack?{...c,pieces:c.pieces.slice(0,-1)}:c));
     setShowQP(false);
   };
 
-  const addChain = ()=>{
-    const idx=chains.length;
-    setChains(prev=>[...prev,mkChain(idx)]);
-    setActiveChain(idx);
+  const addTrack = ()=>{
+    const idx=tracks.length;
+    setTracks(prev=>[...prev,mkTrack(idx)]);
+    setActiveTrack(idx);
   };
 
-  const removeChain = (idx)=>{
-    const chain=chains[idx];
-    if(chain.pieces.length>0){
-      if(!window.confirm(`Chain ${idx+1} has ${chain.pieces.length} piece(s). Remove it anyway?`)) return;
+  const removeTrack = (idx)=>{
+    const track=tracks[idx];
+    if(track.pieces.length>0){
+      if(!window.confirm(`Track ${idx+1} has ${track.pieces.length} piece(s). Remove it anyway?`)) return;
     }
-    const newChains=chains.filter((_,i)=>i!==idx).map((c,i)=>({...c,id:i,label:`Chain ${i+1}`}));
-    if(!newChains.length) { setChains([mkChain(0)]); setActiveChain(0); return; }
-    setChains(newChains);
-    setActiveChain(Math.min(activeChain,newChains.length-1));
+    const newTracks=tracks.filter((_,i)=>i!==idx).map((c,i)=>({...c,id:i,label:`Track ${i+1}`}));
+    if(!newTracks.length) { setTracks([mkTrack(0)]); setActiveTrack(0); return; }
+    setTracks(newTracks);
+    setActiveTrack(Math.min(activeTrack,newTracks.length-1));
   };
 
   const clearAll = ()=>{
-    setChains([mkChain(0)]); setActiveChain(0);
+    setTracks([mkTrack(0)]); setActiveTrack(0);
     setMarkerPlaced(false); setShowQP(false);
   };
 
@@ -776,16 +776,16 @@ export default function App() {
       const w=s2w(e.clientX-rect.left,e.clientY-rect.top);
       // Marker drag takes priority
       if(nearMarker(w.x,w.y)){setDraggingMarker(true);return;}
-      const hit=hitTestPieces(w.x,w.y,chains,marker);
+      const hit=hitTestPieces(w.x,w.y,tracks,marker);
       if(hit){
-        const conns=buildConnectors(chains[hit.chainIdx].pieces,chainOrigin(marker,hit.chainIdx));
+        const conns=buildConnectors(tracks[hit.trackIdx].pieces,trackOrigin(marker,hit.trackIdx));
         const midWorld={x:(conns[hit.pieceIdx].entry.x+conns[hit.pieceIdx].exit.x)/2,y:(conns[hit.pieceIdx].entry.y+conns[hit.pieceIdx].exit.y)/2};
         const midScreen=w2s(midWorld.x,midWorld.y);
-        const hitPiece = chains[hit.chainIdx]?.pieces[hit.pieceIdx];
+        const hitPiece = tracks[hit.trackIdx]?.pieces[hit.pieceIdx];
         setSelectedPiece({...hit,screenX:midScreen.sx,screenY:midScreen.sy});
         setPopupMode("replace");
         setPopupTypeFilter(hitPiece?.type || null);
-        setActiveChain(hit.chainIdx);
+        setActiveTrack(hit.trackIdx);
         return;
       }
       // Click on empty canvas dismisses selection
@@ -860,17 +860,17 @@ export default function App() {
   };
 
   // ── derived ──────────────────────────────────────────────────────────────────
-  const activePieces = chains[activeChain]?.pieces || [];
+  const activePieces = tracks[activeTrack]?.pieces || [];
 
-  const laneData = markerPlaced ? allLaneLengths(chains,marker) : [];
-  const allClosed = markerPlaced && chains.every(c=>{
+  const laneData = markerPlaced ? allLaneLengths(tracks,marker) : [];
+  const allClosed = markerPlaced && tracks.every(c=>{
     if(!c.pieces.length) return false;
-    const origin=chainOrigin(marker,chains.indexOf(c));
+    const origin=trackOrigin(marker,tracks.indexOf(c));
     return isClosed(buildConnectors(c.pieces,origin));
   });
-  const anyClosed = markerPlaced && chains.some(c=>{
+  const anyClosed = markerPlaced && tracks.some(c=>{
     if(!c.pieces.length) return false;
-    const origin=chainOrigin(marker,chains.indexOf(c));
+    const origin=trackOrigin(marker,tracks.indexOf(c));
     return isClosed(buildConnectors(c.pieces,origin));
   });
 
@@ -879,7 +879,7 @@ export default function App() {
     const data={version:2,library:"Aurora",name:layoutName,
       table:{polygon_in:table},
       marker:{x:marker.x,y:marker.y,angleDeg:marker.angleDeg,placed:markerPlaced},
-      chains:chains.map(c=>({id:c.id,label:c.label,pieces:c.pieces.map(p=>({id:p.id}))}))};
+      tracks:tracks.map(c=>({id:c.id,label:c.label,pieces:c.pieces.map(p=>({id:p.id}))}))};
     const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));
     Object.assign(document.createElement("a"),{href:url,download:`${layoutName.replace(/\s+/g,"_")}.sct`}).click();
     URL.revokeObjectURL(url);
@@ -894,13 +894,13 @@ export default function App() {
         if(d.table?.polygon_in)setTable(d.table.polygon_in);
         if(d.name)setLayoutName(d.name);
         if(d.marker){setMarker({x:d.marker.x,y:d.marker.y,angleDeg:d.marker.angleDeg||0});setMarkerPlaced(d.marker.placed||false);}
-        if(d.chains){
-          setChains(d.chains.map((c,i)=>({id:i,label:c.label||`Chain ${i+1}`,pieces:(c.pieces||[]).map(p=>PIECES.find(l=>l.id===p.id)).filter(Boolean)})));
-          setActiveChain(0);
+        if(d.tracks){
+          setTracks(d.tracks.map((c,i)=>({id:i,label:c.label||`Track ${i+1}`,pieces:(c.pieces||[]).map(p=>PIECES.find(l=>l.id===p.id)).filter(Boolean)})));
+          setActiveTrack(0);
         } else if(d.layout?.pieces){
           // backwards compat with v1
-          setChains([{id:0,label:"Chain 1",pieces:(d.layout.pieces||[]).map(p=>PIECES.find(l=>l.id===p.id)).filter(Boolean)}]);
-          setActiveChain(0);
+          setTracks([{id:0,label:"Track 1",pieces:(d.layout.pieces||[]).map(p=>PIECES.find(l=>l.id===p.id)).filter(Boolean)}]);
+          setActiveTrack(0);
         }
       }catch{alert("Invalid .sct file");}
     };
@@ -913,14 +913,14 @@ export default function App() {
     rows.push("BILL OF MATERIALS");
     rows.push("Piece,Count");
     const c={};
-    for(const chain of chains)for(const p of chain.pieces){
+    for(const track of tracks)for(const p of track.pieces){
       const id=p.id==="rd"?"ru":p.id;
       const lbl=p.id==="rd"?"Ramp (physical)":p.label;
       if(!c[id])c[id]={lbl,n:0};c[id].n++;
     }
     Object.values(c).forEach(e=>rows.push(`"${e.lbl}",${e.n}`));
-    // Assembly order per chain
-    chains.filter(ch=>ch.pieces.length>0).forEach(ch=>{
+    // Assembly order per track
+    tracks.filter(ch=>ch.pieces.length>0).forEach(ch=>{
       rows.push("");
       rows.push(`ASSEMBLY ORDER — ${ch.label}`);
       rows.push("Step,Piece");
@@ -935,7 +935,7 @@ export default function App() {
       <button onClick={onClick} disabled={disabled} style={{background:active?(color?`rgba(${color},0.15)`:"rgba(29,78,216,0.2)"):"#1e293b",border:`1px solid ${active?(color?`rgb(${color})`:"#3b82f6"):"#334155"}`,borderRadius:4,padding:"4px 10px",color:disabled?"#334155":active?(color?`rgb(${color})`:"#60a5fa"):"#94a3b8",fontSize:11,fontFamily:"monospace",cursor:disabled?"default":"pointer"}}>{children}</button>
   );
 
-  const activeColor = CHAIN_COLORS[activeChain % CHAIN_COLORS.length];
+  const activeColor = TRACK_COLORS[activeTrack % TRACK_COLORS.length];
 
   return (
       <div style={{display:"flex",flexDirection:"column",height:"100vh",background:"#0f172a",color:"#e2e8f0",fontFamily:"monospace",overflow:"hidden"}}>
@@ -947,7 +947,7 @@ export default function App() {
           <input value={layoutName} onChange={e=>setLayoutName(e.target.value)} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:4,padding:"3px 8px",color:"#f1f5f9",fontFamily:"monospace",fontSize:11,width:130}}/>
 
           <Btn onClick={clearAll}>New</Btn>
-          <Btn onClick={saveFile}>Save .sct</Btn>
+          <Btn onClick={saveFile}>Save Track</Btn>
           <Btn onClick={exportBOM}>BOM CSV</Btn>
 
           {/* Start Marker */}
@@ -963,17 +963,17 @@ export default function App() {
               </div>
           )}
 
-          {/* Chain selector */}
+          {/* Track selector */}
           {markerPlaced && (
               <div style={{display:"flex",gap:4,alignItems:"center"}}>
-                <span style={{fontSize:9,color:"#475569"}}>CHAIN:</span>
-                <select value={activeChain} onChange={e=>setActiveChain(Number(e.target.value))} style={{background:"#1e293b",border:`1px solid ${activeColor}`,borderRadius:4,padding:"3px 7px",color:activeColor,fontSize:11,fontFamily:"monospace",cursor:"pointer"}}>
-                  {chains.map((c,i)=>(
-                      <option key={i} value={i} style={{color:CHAIN_COLORS[i%CHAIN_COLORS.length]}}>{c.label}</option>
+                <span style={{fontSize:9,color:"#475569"}}>TRACK:</span>
+                <select value={activeTrack} onChange={e=>setActiveTrack(Number(e.target.value))} style={{background:"#1e293b",border:`1px solid ${activeColor}`,borderRadius:4,padding:"3px 7px",color:activeColor,fontSize:11,fontFamily:"monospace",cursor:"pointer"}}>
+                  {tracks.map((c,i)=>(
+                      <option key={i} value={i} style={{color:TRACK_COLORS[i%TRACK_COLORS.length]}}>{c.label}</option>
                   ))}
                 </select>
-                <button onClick={addChain} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:3,padding:"2px 8px",color:"#22c55e",fontSize:13,fontFamily:"monospace",cursor:"pointer"}} title="Add chain">+</button>
-                <button onClick={()=>removeChain(activeChain)} disabled={chains.length<=1} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:3,padding:"2px 8px",color:chains.length<=1?"#334155":"#ef4444",fontSize:13,fontFamily:"monospace",cursor:chains.length<=1?"default":"pointer"}} title="Remove active chain">−</button>
+                <button onClick={addTrack} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:3,padding:"2px 8px",color:"#22c55e",fontSize:13,fontFamily:"monospace",cursor:"pointer"}} title="Add track">+</button>
+                <button onClick={()=>removeTrack(activeTrack)} disabled={tracks.length<=1} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:3,padding:"2px 8px",color:tracks.length<=1?"#334155":"#ef4444",fontSize:13,fontFamily:"monospace",cursor:tracks.length<=1?"default":"pointer"}} title="Remove active track">−</button>
               </div>
           )}
 
@@ -1046,13 +1046,13 @@ export default function App() {
               background:!markerPlaced?"#1e293b":allClosed?"rgba(34,197,94,0.15)":"rgba(251,191,36,0.1)",
               border:`1px solid ${!markerPlaced?"#334155":allClosed?"#22c55e":"#fbbf24"}`,
               color:!markerPlaced?"#475569":allClosed?"#22c55e":"#fbbf24"}}>
-              {!markerPlaced?"No start marker":allClosed?`✓ All ${chains.length} closed`:
-                  chains.map((c,i)=>{
+              {!markerPlaced?"No start marker":allClosed?`✓ All ${tracks.length} closed`:
+                  tracks.map((c,i)=>{
                     if(!c.pieces.length) return null;
-                    const o=chainOrigin(marker,i);
+                    const o=trackOrigin(marker,i);
                     const cl=isClosed(buildConnectors(c.pieces,o));
                     return cl?null:`C${i+1}:${c.pieces.length}p`;
-                  }).filter(Boolean).join(" ")||`${chains.reduce((s,c)=>s+c.pieces.length,0)} pieces`}
+                  }).filter(Boolean).join(" ")||`${tracks.reduce((s,c)=>s+c.pieces.length,0)} pieces`}
             </div>
             {/* Zoom + Home */}
             <div style={{display:"flex",gap:3,alignItems:"center"}}>
@@ -1104,7 +1104,7 @@ export default function App() {
               {!markerPlaced&&!placingMarker&&!tMode&&(
                   <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center",pointerEvents:"none"}}>
                     <div style={{fontSize:13,color:"#475569",fontFamily:"monospace",marginBottom:8}}>Click "📍 Place Start" to begin</div>
-                    <div style={{fontSize:10,color:"#334155",fontFamily:"monospace"}}>The start marker sets where all chains begin</div>
+                    <div style={{fontSize:10,color:"#334155",fontFamily:"monospace"}}>The start marker sets where all tracks begin</div>
                   </div>
               )}
 
@@ -1126,10 +1126,10 @@ export default function App() {
 
               {/* Add / Replace / Remove piece popup */}
               {selectedPiece && !tMode && !placingMarker && (() => {
-                const chain = chains[selectedPiece.chainIdx];
-                const piece = chain?.pieces[selectedPiece.pieceIdx];
+                const track = tracks[selectedPiece.trackIdx];
+                const piece = track?.pieces[selectedPiece.pieceIdx];
                 if (!piece) return null;
-                const color = CHAIN_COLORS[selectedPiece.chainIdx % CHAIN_COLORS.length];
+                const color = TRACK_COLORS[selectedPiece.trackIdx % TRACK_COLORS.length];
                 const popLeft = Math.min(Math.max(8, selectedPiece.screenX - 125), window.innerWidth - 310);
                 const popTop = Math.max(8, selectedPiece.screenY - 240);
                 const types = ["straight","curve","ramp"];
@@ -1139,8 +1139,8 @@ export default function App() {
                         : !popupTypeFilter || p.type === popupTypeFilter
                 );
                 const applyPiece = (p) => {
-                  setChains(prev => prev.map((c,ci) => {
-                    if (ci !== selectedPiece.chainIdx) return c;
+                  setTracks(prev => prev.map((c,ci) => {
+                    if (ci !== selectedPiece.trackIdx) return c;
                     const pieces = [...c.pieces];
                     if (popupMode === "replace") {
                       pieces[selectedPiece.pieceIdx] = p;
@@ -1212,7 +1212,7 @@ export default function App() {
                       {popupMode === "replace" && (
                           <button
                               onClick={() => {
-                                setChains(prev => prev.map((c,ci) => ci !== selectedPiece.chainIdx ? c : {
+                                setTracks(prev => prev.map((c,ci) => ci !== selectedPiece.trackIdx ? c : {
                                   ...c, pieces: c.pieces.filter((_,pi) => pi !== selectedPiece.pieceIdx)
                                 }));
                                 setSelectedPiece(null);
@@ -1238,7 +1238,7 @@ export default function App() {
               {!tMode&&!placingMarker&&markerPlaced&&(
                   <div style={{position:"absolute",bottom:12,left:"50%",transform:"translateX(-50%)",display:"flex",gap:6,alignItems:"center"}}>
                     <div style={{width:10,height:10,borderRadius:"50%",background:activeColor,boxShadow:`0 0 8px ${activeColor}`}}/>
-                    <span style={{fontSize:10,color:activeColor,fontFamily:"monospace"}}>{chains[activeChain]?.label}</span>
+                    <span style={{fontSize:10,color:activeColor,fontFamily:"monospace"}}>{tracks[activeTrack]?.label}</span>
                     <button onClick={()=>setShowQP(v=>!v)} style={{background:"#1d4ed8",border:"none",borderRadius:6,color:"#fff",fontSize:12,fontFamily:"monospace",padding:"7px 16px",cursor:"pointer",boxShadow:"0 4px 12px rgba(29,78,216,0.5)"}}>+ Add Piece</button>
                     {activePieces.length>0&&<button onClick={undoLast} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:6,color:"#94a3b8",fontSize:12,fontFamily:"monospace",padding:"7px 12px",cursor:"pointer"}}>↩ Undo</button>}
                   </div>
@@ -1259,12 +1259,12 @@ export default function App() {
                   <div style={{marginBottom:6}}>
                     <div style={{fontSize:10,color:"#475569",fontFamily:"monospace",marginBottom:4}}>LANE LENGTHS</div>
                     <div style={{display:"flex",flexWrap:"wrap",gap:12}}>
-                      {laneData.map(({chainIdx,l1,l2})=>{
-                        const color=CHAIN_COLORS[chainIdx%CHAIN_COLORS.length];
+                      {laneData.map(({trackIdx,l1,l2})=>{
+                        const color=TRACK_COLORS[trackIdx%TRACK_COLORS.length];
                         const delta=Math.abs(l1-l2);
                         return (
-                            <div key={chainIdx} style={{display:"flex",gap:8,alignItems:"center"}}>
-                              <span style={{fontSize:10,color,fontFamily:"monospace",fontWeight:"bold"}}>C{chainIdx+1}</span>
+                            <div key={trackIdx} style={{display:"flex",gap:8,alignItems:"center"}}>
+                              <span style={{fontSize:10,color,fontFamily:"monospace",fontWeight:"bold"}}>C{trackIdx+1}</span>
                               <span style={{fontSize:11,fontFamily:"monospace"}}>
                           <span style={{color:color}}>L1</span>
                           <span style={{color:"#f1f5f9",marginLeft:4}}>{l1.toFixed(1)}"</span>
@@ -1281,10 +1281,10 @@ export default function App() {
                   </div>
               )}
 
-              {chains.some(c=>c.pieces.length>0)&&(
+              {tracks.some(c=>c.pieces.length>0)&&(
                   <div>
                     <div style={{fontSize:10,color:"#475569",fontFamily:"monospace",marginBottom:4}}>BILL OF MATERIALS</div>
-                    <BOM chains={chains}/>
+                    <BOM tracks={tracks}/>
                   </div>
               )}
             </div>
