@@ -10,8 +10,7 @@ const SNAP_THRESH = 10;
 
 const CHAIN_COLORS = ["#f59e0b","#38bdf8","#a78bfa","#34d399","#fb7185","#fb923c","#e879f9","#4ade80"];
 const SLOT_OFFSET = [0.75, 2.25]; // inches from outside edge
-
-
+const ELEV_STRIPE = "#a3e635";
 
 // ─── Geometry ─────────────────────────────────────────────────────────────────
 const d2r = d => d * Math.PI / 180;
@@ -226,6 +225,14 @@ function drawCanvas(canvas, chains, marker, markerPlaced, table, vp, activeChain
           ctx.beginPath(); ctx.arc(ex+px*sc(o),ey+py*sc(o),2.5,0,Math.PI*2);
           ctx.fillStyle = li===0 ? color : color+"aa"; ctx.fill();
         });
+        if (entry.elevIn > 0 && piece.type !== "ramp") {
+          ctx.beginPath();
+          ctx.moveTo(ex+px*hw, ey+py*hw);
+          ctx.lineTo(xx+px*hw, xy+py*hw);
+          ctx.strokeStyle = ELEV_STRIPE;
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
         if (piece.type==="ramp") {
           const mx=(ex+xx)/2,my=(ey+xy)/2;
           ctx.fillStyle="#38bdf8"; ctx.font=`bold ${Math.max(9,sc(0.4))}px monospace`;
@@ -251,7 +258,15 @@ function drawCanvas(canvas, chains, marker, markerPlaced, table, vp, activeChain
           ctx.strokeStyle=li===0?color:color+"aa"; ctx.lineWidth=2; ctx.stroke();
           ctx.beginPath(); ctx.arc(scx+Math.cos(startA)*sr,scy+Math.sin(startA)*sr,2.5,0,Math.PI*2);
           ctx.fillStyle=li===0?color:color+"aa"; ctx.fill();
+          ctx.fillStyle=li===0?color:color+"aa"; ctx.fill();
         });
+        if (entry.elevIn > 0) {
+          ctx.beginPath();
+          ctx.arc(scx, scy, outerR, startA, endA, acw);
+          ctx.strokeStyle = ELEV_STRIPE;
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
       }
 
       // Piece index
