@@ -26,6 +26,6 @@ export const PIECES = [
     {id:"c15-45R",label:'Curve 15" 45° R',type:"curve",r:15,a:45,turn:"R",elev:0,tags:["curve"]},
     {id:"c18-45L",label:'Curve 18" 45° L',type:"curve",r:18,a:45,turn:"L",elev:0,tags:["curve"]},
     {id:"c18-45R",label:'Curve 18" 45° R',type:"curve",r:18,a:45,turn:"R",elev:0,tags:["curve"]},
-    {id:"ru",label:"Ramp Up",  type:"ramp",length_in:9,elev:3, tags:["ramp","elevation"]},
-    {id:"rd",label:"Ramp Down",type:"ramp",length_in:9,elev:-3,tags:["ramp","elevation"]},
+    {id:"ru",label:"Ramp Up",  type:"ramp",length_in:9,elev:3, tags:["ramp"]},
+    {id:"rd",label:"Ramp Down",type:"ramp",length_in:9,elev:-3,tags:["ramp"]},
 ];
