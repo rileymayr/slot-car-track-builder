@@ -24,7 +24,7 @@ function exitOf(piece, entry) {
       angleDeg, elevIn: elevIn + piece.elev};
   }
   if (piece.type === "curve") {
-    const ts = piece.turn === "L" ? 1 : -1;
+    const ts = piece.turn === "L" ? -1 : 1;
     const sweep = d2r(piece.a) * ts;
     const tcr = piece.r - TRACK_WIDTH / 2;
     const pa = ar + ts * Math.PI / 2;
@@ -233,7 +233,7 @@ function drawCanvas(canvas, chains, marker, markerPlaced, table, vp, activeChain
           ctx.fillText(piece.elev>0?"▲":"▼",mx,my);
         }
       } else if (piece.type==="curve") {
-        const ts2 = piece.turn==="L"?1:-1;
+        const ts2 = piece.turn === "L" ? -1 : 1;
         const tcr = piece.r - TRACK_WIDTH/2;
         const pa = ar + ts2*Math.PI/2;
         const cx=entry.x+Math.cos(pa)*tcr, cy=entry.y+Math.sin(pa)*tcr;
