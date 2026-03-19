@@ -954,18 +954,6 @@ export default function App() {
               </div>
           )}
 
-          {/* Side chips */}
-          {!tMode&&table.length>=3&&(
-              <div style={{display:"flex",gap:3,alignItems:"center"}}>
-                <span style={{fontSize:9,color:"#475569"}}>SIDES:</span>
-                {table.map((pt,i)=>{
-                  const next=table[(i+1)%table.length];
-                  const len=Math.hypot(next[0]-pt[0],next[1]-pt[1]);
-                  return <button key={i} onClick={()=>setEditSide({idx:i,value:len.toFixed(1)})} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:3,padding:"2px 6px",color:"#fbbf24",fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>{len.toFixed(0)}"</button>;
-                })}
-              </div>
-          )}
-
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
             {/* Status */}
             <div style={{fontSize:11,padding:"3px 10px",borderRadius:4,
