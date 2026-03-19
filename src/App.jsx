@@ -433,33 +433,6 @@ function AssemblyGuide({tracks}) {
   );
 }
 
-// ─── Quick Pick ───────────────────────────────────────────────────────────────
-function QuickPick({onSelect,onClose,lastPiece}) {
-  const common=PIECES.filter(p=>p.tags.includes("common"));
-  const similar=lastPiece?PIECES.filter(p=>p.type===lastPiece.type&&p.id!==lastPiece.id).slice(0,4):[];
-  const groups=[{lbl:"COMMON",ps:common},...(similar.length?[{lbl:"SIMILAR",ps:similar}]:[])];
-  return (
-      <div style={{background:"#0f172a",border:"1px solid #334155",borderRadius:8,padding:12,boxShadow:"0 8px 32px rgba(0,0,0,0.6)",minWidth:230,marginBottom:8}}>
-        {groups.map(g=>(
-            <div key={g.lbl} style={{marginBottom:8}}>
-              <div style={{fontSize:9,color:"#475569",fontFamily:"monospace",marginBottom:4}}>{g.lbl}</div>
-              {g.ps.map(p=>(
-                  <button key={p.id} onClick={()=>onSelect(p)}
-                          onMouseEnter={e=>e.currentTarget.style.background="#334155"}
-                          onMouseLeave={e=>e.currentTarget.style.background="#1e293b"}
-                          style={{display:"block",width:"100%",background:"#1e293b",border:"1px solid #334155",borderRadius:4,padding:"5px 10px",color:"#e2e8f0",fontSize:12,fontFamily:"monospace",cursor:"pointer",textAlign:"left",marginBottom:2}}>
-                    {p.label}
-                  </button>
-              ))}
-            </div>
-        ))}
-        <button onClick={onClose} style={{width:"100%",background:"transparent",border:"1px solid #334155",borderRadius:4,color:"#64748b",fontSize:11,fontFamily:"monospace",cursor:"pointer",padding:4}}>
-          Browse All ▾
-        </button>
-      </div>
-  );
-}
-
 // ─── Palette ──────────────────────────────────────────────────────────────────
 function Palette({onAdd,filter,setFilter}) {
   const tags=["all","common","straight","curve","ramp"];
@@ -505,7 +478,6 @@ export default function App() {
   const [draggingMarker, setDraggingMarker] = useState(false);
 
   const [table, setTable] = useState([[0,0],[108,0],[108,60],[0,60]]);
-  const [showQP, setShowQP] = useState(false);
   const [filter, setFilter] = useState("common");
   const [layoutName, setLayoutName] = useState("My Layout");
 
@@ -650,12 +622,10 @@ export default function App() {
   // ── Track actions ─────────────────────────────────────────────────────────
   const addPiece = useCallback(p=>{
     setTracks(prev=>prev.map((c,i)=>i===activeTrack?{...c,pieces:[...c.pieces,p]}:c));
-    setShowQP(false);
   },[activeTrack]);
 
   const undoLast = ()=>{
     setTracks(prev=>prev.map((c,i)=>i===activeTrack?{...c,pieces:c.pieces.slice(0,-1)}:c));
-    setShowQP(false);
   };
 
   const addTrack = ()=>{
@@ -677,7 +647,7 @@ export default function App() {
 
   const clearAll = ()=>{
     setTracks([mkTrack(0)]); setActiveTrack(0);
-    setMarkerPlaced(false); setShowQP(false);
+    setMarkerPlaced(false);
   };
 
   // ── Table drawing ─────────────────────────────────────────────────────────
@@ -1177,19 +1147,11 @@ export default function App() {
                 );
               })()}
 
-              {/* Quick pick */}
-              {showQP&&(
-                  <div style={{position:"absolute",bottom:52,left:"50%",transform:"translateX(-50%)"}}>
-                    <QuickPick onSelect={addPiece} onClose={()=>setShowQP(false)} lastPiece={activePieces[activePieces.length-1]}/>
-                  </div>
-              )}
-
               {/* Add/Undo */}
               {!tMode&&markerPlaced&&(
                   <div style={{position:"absolute",bottom:12,left:"50%",transform:"translateX(-50%)",display:"flex",gap:6,alignItems:"center"}}>
                     <div style={{width:10,height:10,borderRadius:"50%",background:activeColor,boxShadow:`0 0 8px ${activeColor}`}}/>
                     <span style={{fontSize:10,color:activeColor,fontFamily:"monospace"}}>{tracks[activeTrack]?.label}</span>
-                    <button onClick={()=>setShowQP(v=>!v)} style={{background:"#1d4ed8",border:"none",borderRadius:6,color:"#fff",fontSize:12,fontFamily:"monospace",padding:"7px 16px",cursor:"pointer",boxShadow:"0 4px 12px rgba(29,78,216,0.5)"}}>+ Add Piece</button>
                     {activePieces.length>0&&<button onClick={undoLast} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:6,color:"#94a3b8",fontSize:12,fontFamily:"monospace",padding:"7px 12px",cursor:"pointer"}}>↩ Undo</button>}
                   </div>
               )}

@@ -27,7 +27,7 @@ https://rileymayr.github.io/slot-car-track-builder/
 
 1. **Draw Table (Optional)**: Use the "Draw Table" mode to outline your physical layout area. Click to place corners and "Done" to finish.
 2. **Place Starting Point**: Click anywhere on the canvas or table to place your track's starting marker.
-3. **Add Pieces**: Use the "+ Add Piece" button to choose from the Aurora track library.
+3. **Add Pieces**: Use the piece library on the left to choose from the Aurora track library.
 4. **Edit Track**:
    - **Click** a piece to select it.
    - **Replace**: Switch an existing piece with another while maintaining the rest of the track's flow.
