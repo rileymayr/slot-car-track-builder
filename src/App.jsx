@@ -868,6 +868,10 @@ export default function App() {
         <div style={{display:"flex",alignItems:"center",gap:7,padding:"7px 12px",background:"#020617",borderBottom:"1px solid #1e293b",flexShrink:0,flexWrap:"wrap"}}>
           <span style={{fontSize:13,fontWeight:"bold",color:"#38bdf8",marginRight:2}}>🏎 SLOT TRACK</span>
 
+          <label style={{background:"#1e293b",border:"1px solid #334155",borderRadius:4,padding:"4px 10px",color:"#94a3b8",fontSize:11,fontFamily:"monospace",cursor:"pointer"}}>
+            Load Saved Track <input type="file" accept=".sct" onChange={loadFile} style={{display:"none"}}/>
+          </label>
+
           <input value={layoutName} onChange={e=>setLayoutName(e.target.value)} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:4,padding:"3px 8px",color:"#f1f5f9",fontFamily:"monospace",fontSize:11,width:130}}/>
 
           <Btn onClick={clearAll}>New</Btn>
@@ -961,10 +965,6 @@ export default function App() {
                 })}
               </div>
           )}
-
-          <label style={{background:"#1e293b",border:"1px solid #334155",borderRadius:4,padding:"4px 10px",color:"#94a3b8",fontSize:11,fontFamily:"monospace",cursor:"pointer"}}>
-            Load <input type="file" accept=".sct" onChange={loadFile} style={{display:"none"}}/>
-          </label>
 
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
             {/* Status */}
