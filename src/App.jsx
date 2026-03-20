@@ -372,6 +372,128 @@ function drawCanvas(canvas, tracks, marker, markerPlaced, table, vp, activeTrack
   }
 }
 
+// ─── Help Menu ────────────────────────────────────────────────────────────────
+function HelpMenu({onClose}) {
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+
+  const handleClose = () => {
+    if (dontShowAgain) {
+      try {
+        localStorage.setItem("sct-hide-help", "true");
+      } catch {}
+    }
+    onClose();
+  };
+
+  return (
+    <div onClick={handleClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:400,backdropFilter:"blur(2px)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#0f172a",border:"2px solid #38bdf8",borderRadius:12,padding:"24px",maxWidth:680,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 12px 48px rgba(0,0,0,0.9)"}}>
+        {/* Header */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:20,fontWeight:"bold",color:"#38bdf8",fontFamily:"monospace"}}>SLOT TRACK BUILDER HELP</span>
+          </div>
+          <button onClick={handleClose} style={{background:"transparent",border:"1px solid #334155",borderRadius:4,color:"#94a3b8",fontSize:20,cursor:"pointer",padding:"2px 8px",lineHeight:1}}>×</button>
+        </div>
+
+        {/* Keybinds */}
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:14,color:"#38bdf8",fontFamily:"monospace",fontWeight:"bold",marginBottom:10,borderBottom:"1px solid #1e293b",paddingBottom:4}}>KEYBOARD SHORTCUTS</div>
+          <div style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"10px 16px",fontSize:13,fontFamily:"monospace"}}>
+            <span style={{color:"#fbbf24",fontWeight:"bold"}}>Escape</span>
+            <span style={{color:"#e2e8f0"}}>Cancel table drawing / Close popups</span>
+            <span style={{color:"#fbbf24",fontWeight:"bold"}}>Enter</span>
+            <span style={{color:"#e2e8f0"}}>Confirm length input in table mode</span>
+            <span style={{color:"#fbbf24",fontWeight:"bold"}}>Backspace</span>
+            <span style={{color:"#e2e8f0"}}>Undo last point in table drawing</span>
+            <span style={{color:"#fbbf24",fontWeight:"bold"}}>Scroll Wheel</span>
+            <span style={{color:"#e2e8f0"}}>Zoom in/out on canvas</span>
+            <span style={{color:"#fbbf24",fontWeight:"bold"}}>Alt + Drag</span>
+            <span style={{color:"#e2e8f0"}}>Pan canvas (or use middle-click)</span>
+          </div>
+        </div>
+
+        {/* Key Buttons */}
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:14,color:"#38bdf8",fontFamily:"monospace",fontWeight:"bold",marginBottom:10,borderBottom:"1px solid #1e293b",paddingBottom:4}}>KEY BUTTONS</div>
+          <div style={{display:"flex",flexDirection:"column",gap:10,fontSize:13,fontFamily:"monospace"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{color:"#22c55e",fontSize:18}}>→</span>
+              <span style={{color:"#94a3b8",background:"#1e293b",padding:"4px 10px",borderRadius:3,border:"1px solid #334155"}}>Load Saved Track</span>
+              <span style={{color:"#e2e8f0"}}>Load track layouts from .sct files</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{color:"#22c55e",fontSize:18}}>→</span>
+              <span style={{color:"#94a3b8",background:"#1e293b",padding:"4px 10px",borderRadius:3,border:"1px solid #334155"}}>Save Track</span>
+              <span style={{color:"#e2e8f0"}}>Save your layout to a .sct file</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{color:"#22c55e",fontSize:18}}>→</span>
+              <span style={{color:"#94a3b8",background:"#1e293b",padding:"4px 10px",borderRadius:3,border:"1px solid #334155"}}>BOM CSV</span>
+              <span style={{color:"#e2e8f0"}}>Export bill of materials as CSV</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{color:"#22c55e",fontSize:18}}>→</span>
+              <span style={{color:"#94a3b8",background:"#1e293b",padding:"4px 10px",borderRadius:3,border:"1px solid #334155"}}>Draw Table</span>
+              <span style={{color:"#e2e8f0"}}>Define table boundary polygon</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{color:"#22c55e",fontSize:18}}>←</span>
+              <span style={{color:"#94a3b8",background:"#1e293b",padding:"4px 10px",borderRadius:3,border:"1px solid #334155"}}>Sidebar</span>
+              <span style={{color:"#e2e8f0"}}>Click pieces to add to track</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Features */}
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:14,color:"#38bdf8",fontFamily:"monospace",fontWeight:"bold",marginBottom:10,borderBottom:"1px solid #1e293b",paddingBottom:4}}>FEATURES</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8,fontSize:13,fontFamily:"monospace",color:"#e2e8f0"}}>
+            <div style={{display:"flex",gap:10}}>
+              <span style={{color:"#22c55e"}}>•</span>
+              <span><strong style={{color:"#fbbf24"}}>Click canvas</strong> to place start marker (first time)</span>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <span style={{color:"#22c55e"}}>•</span>
+              <span><strong style={{color:"#fbbf24"}}>Drag start marker</strong> to reposition after placement</span>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <span style={{color:"#22c55e"}}>•</span>
+              <span><strong style={{color:"#fbbf24"}}>Click any piece</strong> to replace, add after, or remove it</span>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <span style={{color:"#22c55e"}}>•</span>
+              <span><strong style={{color:"#fbbf24"}}>Save/Load tracks</strong> as .sct files for later use</span>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <span style={{color:"#22c55e"}}>•</span>
+              <span><strong style={{color:"#fbbf24"}}>Export BOM</strong> as CSV for ordering parts</span>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <span style={{color:"#22c55e"}}>•</span>
+              <span><strong style={{color:"#fbbf24"}}>Multiple tracks</strong> supported with independent lanes</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{borderTop:"1px solid #1e293b",paddingTop:16}}>
+          <div style={{fontSize:12,color:"#64748b",fontFamily:"monospace",marginBottom:12,textAlign:"center"}}>
+            You can reopen this help menu anytime by clicking the <strong style={{color:"#94a3b8"}}>Help</strong> button in the top-right corner of the toolbar.
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <label style={{display:"flex",alignItems:"center",gap:6,fontSize:11,fontFamily:"monospace",color:"#94a3b8",cursor:"pointer"}}>
+              <input type="checkbox" checked={dontShowAgain} onChange={e=>setDontShowAgain(e.target.checked)} style={{cursor:"pointer"}}/>
+              Don't show this again
+            </label>
+            <button onClick={handleClose} style={{background:"#1d4ed8",border:"none",borderRadius:6,padding:"8px 20px",color:"#fff",fontSize:12,fontFamily:"monospace",fontWeight:"bold",cursor:"pointer"}}>Got it!</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── BOM ──────────────────────────────────────────────────────────────────────
 function BOM({tracks}) {
   const c={};
@@ -498,6 +620,13 @@ export default function App() {
   const [selectedPiece, setSelectedPiece] = useState(null);
   const [popupMode, setPopupMode] = useState("replace");
   const [popupTypeFilter, setPopupTypeFilter] = useState(null);
+  const [showHelp, setShowHelp] = useState(() => {
+    try {
+      return localStorage.getItem("sct-hide-help") !== "true";
+    } catch {
+      return true;
+    }
+  });
 
   // ── Presets ───────────────────────────────────────────────────────────────
   const BUILTIN_PRESETS = [
@@ -976,6 +1105,9 @@ export default function App() {
           )}
 
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
+            {/* Help Button */}
+            <Btn onClick={()=>setShowHelp(true)} title="Show help and keyboard shortcuts">Help</Btn>
+
             {/* Status */}
             <div style={{fontSize:11,padding:"3px 10px",borderRadius:4,
               background:!markerPlaced?"#1e293b":allClosed?"rgba(34,197,94,0.15)":"rgba(251,191,36,0.1)",
@@ -1230,6 +1362,9 @@ export default function App() {
               </div>
             </div>
         )}
+
+        {/* Help Menu */}
+        {showHelp && <HelpMenu onClose={()=>setShowHelp(false)} />}
       </div>
   );
 }
