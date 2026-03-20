@@ -4,7 +4,7 @@ import { PIECES } from './pieces/aurora.js';
 // ─── Constants ────────────────────────────────────────────────────────────────
 const SCALE = 18;
 const TRACK_WIDTH = 3.0;
-const LOOP_TOL = 0.15;
+const LOOP_TOL = 0.25;
 const SNAP_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
 const SNAP_THRESH = 10;
 
@@ -45,6 +45,20 @@ function buildConnectors(pieces, origin) {
     out.push({entry, exit, piece: p});
     cur = exit;
   }
+
+  // Snap-to-close: if last exit is within tolerance of first entry, snap it closed
+  if (out.length >= 2) {
+    const first = out[0].entry;
+    const last = out[out.length - 1].exit;
+    const dist = Math.hypot(first.x - last.x, first.y - last.y);
+    const angleDiff = ((first.angleDeg - last.angleDeg) % 360 + 360) % 360;
+
+    if (dist < LOOP_TOL && (angleDiff < 2 || angleDiff > 358)) {
+      // Snap the last piece's exit to match the first piece's entry
+      out[out.length - 1].exit = {...first};
+    }
+  }
+
   return out;
 }
 
