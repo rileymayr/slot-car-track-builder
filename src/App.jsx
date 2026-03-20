@@ -1108,19 +1108,6 @@ export default function App() {
             {/* Help Button */}
             <Btn onClick={()=>setShowHelp(true)} title="Show help and keyboard shortcuts">Help</Btn>
 
-            {/* Status */}
-            <div style={{fontSize:11,padding:"3px 10px",borderRadius:4,
-              background:!markerPlaced?"#1e293b":allClosed?"rgba(34,197,94,0.15)":"rgba(251,191,36,0.1)",
-              border:`1px solid ${!markerPlaced?"#334155":allClosed?"#22c55e":"#fbbf24"}`,
-              color:!markerPlaced?"#475569":allClosed?"#22c55e":"#fbbf24"}}>
-              {!markerPlaced?"No start marker":allClosed?`✓ All ${tracks.length} closed`:
-                  tracks.map((c,i)=>{
-                    if(!c.pieces.length) return null;
-                    const o=trackOrigin(marker,i);
-                    const cl=isClosed(buildConnectors(c.pieces,o));
-                    return cl?null:`C${i+1}:${c.pieces.length}p`;
-                  }).filter(Boolean).join(" ")||`${tracks.reduce((s,c)=>s+c.pieces.length,0)} pieces`}
-            </div>
             {/* Zoom + Home */}
             <div style={{display:"flex",gap:3,alignItems:"center"}}>
               <Btn onClick={()=>{
