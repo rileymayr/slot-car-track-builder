@@ -515,6 +515,27 @@ export default function App() {
   const [showPresets, setShowPresets] = useState(false);
   const [presetNameInput, setPresetNameInput] = useState("");
 
+  const fitToView = useCallback(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const pts = table.length >= 3 ? table : markerPlaced ? [[marker.x, marker.y]] : [[0, 0]];
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    const worldW = Math.max(maxX - minX, 12), worldH = Math.max(maxY - minY, 12);
+    const fitZoom = Math.min(5, Math.max(0.2, Math.min((c.width - 24) / (SCALE * worldW), (c.height - 24) / (SCALE * worldH))));
+    setVp({
+      zoom: fitZoom,
+      px: c.width / 2 - ((minX + maxX) / 2) * SCALE * fitZoom,
+      py: c.height / 2 - ((minY + maxY) / 2) * SCALE * fitZoom
+    });
+  }, [table, markerPlaced, marker]);
+
+  // ── Initial fit ──
+  useEffect(() => {
+    const timer = setTimeout(fitToView, 50); // Small delay to ensure canvas has dimensions
+    return () => clearTimeout(timer);
+  }, [fitToView]);
+
   // ── Helpers ───────────────────────────────────────────────────────────────
   const s2w = useCallback((sx,sy)=>{
     const c = canvasRef.current;
@@ -981,15 +1002,7 @@ export default function App() {
                 const cx=c.width/2, cy=c.height/2;
                 setVp(v=>{const nz=Math.min(5,v.zoom*1.2);const wx=(cx-v.px)/(SCALE*v.zoom);const wy=(cy-v.py)/(SCALE*v.zoom);return{zoom:nz,px:cx-wx*SCALE*nz,py:cy-wy*SCALE*nz};});
               }}>+</Btn>
-              <Btn title="Fit table in view" onClick={()=>{
-                const c=canvasRef.current; if(!c) return;
-                const pts=table.length>=3?table:markerPlaced?[[marker.x,marker.y]]:[[0,0]];
-                const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
-                const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
-                const worldW=Math.max(maxX-minX,12),worldH=Math.max(maxY-minY,12);
-                const fitZoom=Math.min(5,Math.max(0.2,Math.min((c.width-24)/(SCALE*worldW),(c.height-24)/(SCALE*worldH))));
-                setVp({zoom:fitZoom,px:c.width/2-((minX+maxX)/2)*SCALE*fitZoom,py:c.height/2-((minY+maxY)/2)*SCALE*fitZoom});
-              }}>⌂</Btn>
+              <Btn title="Fit table in view" onClick={fitToView}>⌂</Btn>
             </div>
           </div>
         </div>
