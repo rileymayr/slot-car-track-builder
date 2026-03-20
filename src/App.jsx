@@ -391,7 +391,7 @@ function HelpMenu({onClose}) {
         {/* Header */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:20,fontWeight:"bold",color:"#38bdf8",fontFamily:"monospace"}}>SLOT TRACK BUILDER HELP</span>
+            <span style={{fontSize:20,fontWeight:"bold",color:"#38bdf8",fontFamily:"monospace"}}>TRACK BUILDER HELP</span>
           </div>
           <button onClick={handleClose} style={{background:"transparent",border:"1px solid #334155",borderRadius:4,color:"#94a3b8",fontSize:20,cursor:"pointer",padding:"2px 8px",lineHeight:1}}>×</button>
         </div>
@@ -1016,7 +1016,7 @@ export default function App() {
 
         {/* ── Toolbar ── */}
         <div style={{display:"flex",alignItems:"center",gap:7,padding:"7px 12px",background:"#020617",borderBottom:"1px solid #1e293b",flexShrink:0,flexWrap:"wrap"}}>
-          <span style={{fontSize:13,fontWeight:"bold",color:"#38bdf8",marginRight:2}}>🏎 SLOT TRACK</span>
+          <span style={{fontSize:13,fontWeight:"bold",color:"#38bdf8",marginRight:2}}>🏎 TRACK BUILDER</span>
 
           <label style={{background:"#1e293b",border:"1px solid #334155",borderRadius:4,padding:"4px 10px",color:"#94a3b8",fontSize:11,fontFamily:"monospace",cursor:"pointer"}}>
             Load Saved Track <input type="file" accept=".sct" onChange={loadFile} style={{display:"none"}}/>
