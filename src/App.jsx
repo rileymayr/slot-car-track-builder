@@ -125,7 +125,7 @@ function trackOrigin(marker, trackIdx) {
   };
 }
 
-function allLaneLengths(tracks, marker) {
+function allLaneLengths(tracks) {
   const result = [];
   tracks.forEach((track, ci) => {
     let l1 = 0, l2 = 0;
@@ -380,7 +380,9 @@ function HelpMenu({onClose}) {
     if (dontShowAgain) {
       try {
         localStorage.setItem("sct-hide-help", "true");
-      } catch {}
+      } catch {
+        // localStorage may not be available in some contexts
+      }
     }
     onClose();
   };
@@ -518,43 +520,6 @@ function BOM({tracks}) {
 }
 
 
-// ─── Assembly Guide ───────────────────────────────────────────────────────────
-function AssemblyGuide({tracks}) {
-  const active = tracks.filter(c => c.pieces.length > 0);
-  if (!active.length) return null;
-  return (
-      <div style={{marginTop:10}}>
-        <div style={{fontSize:10,color:"#475569",fontFamily:"monospace",marginBottom:6}}>ASSEMBLY ORDER</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:12,alignItems:"flex-start"}}>
-          {active.map((track, ci) => {
-            const color = TRACK_COLORS[track.id % TRACK_COLORS.length];
-            return (
-                <div key={track.id} style={{minWidth:160,flex:1}}>
-                  <div style={{fontSize:10,color,fontFamily:"monospace",fontWeight:"bold",marginBottom:4,
-                    borderBottom:`1px solid ${color}33`,paddingBottom:3}}>
-                    {track.label}
-                  </div>
-                  <div style={{display:"flex",flexDirection:"column",gap:1}}>
-                    {track.pieces.map((p, pi) => (
-                        <div key={pi} style={{display:"flex",gap:5,alignItems:"baseline"}}>
-                    <span style={{fontSize:9,color:"#475569",fontFamily:"monospace",
-                      minWidth:18,textAlign:"right",flexShrink:0}}>
-                      {pi+1}.
-                    </span>
-                          <span style={{fontSize:11,color:"#e2e8f0",fontFamily:"monospace"}}>
-                      {p.label}
-                    </span>
-                        </div>
-                    ))}
-                  </div>
-                </div>
-            );
-          })}
-        </div>
-      </div>
-  );
-}
-
 // ─── Palette ──────────────────────────────────────────────────────────────────
 function Palette({onAdd,filter,setFilter}) {
   const tags=["all","common","straight","curve","ramp"];
@@ -583,6 +548,11 @@ function Palette({onAdd,filter,setFilter}) {
       </div>
   );
 }
+
+// ─── Button Component ─────────────────────────────────────────────────────────
+const Btn=({children,onClick,active,color,disabled,title})=>(
+    <button title={title} onClick={onClick} disabled={disabled} style={{background:active?(color?`rgba(${color},0.15)`:"rgba(29,78,216,0.2)"):"#1e293b",border:`1px solid ${active?(color?`rgb(${color})`:"#3b82f6"):"#334155"}`,borderRadius:4,padding:"4px 10px",color:disabled?"#334155":active?(color?`rgb(${color})`:"#60a5fa"):"#94a3b8",fontSize:11,fontFamily:"monospace",cursor:disabled?"default":"pointer"}}>{children}</button>
+);
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 const mkTrack = (idx) => ({id: idx, label: `Track ${idx+1}`, pieces: []});
@@ -624,6 +594,7 @@ export default function App() {
     try {
       return localStorage.getItem("sct-hide-help") !== "true";
     } catch {
+      // localStorage may not be available in some contexts
       return true;
     }
   });
@@ -639,7 +610,9 @@ export default function App() {
   });
   const saveCustomPresets = p => {
     setCustomPresets(p);
-    try{localStorage.setItem("sct-table-presets",JSON.stringify(p));}catch{}
+    try{localStorage.setItem("sct-table-presets",JSON.stringify(p));}catch{
+      // localStorage may not be available
+    }
   };
   const [showPresets, setShowPresets] = useState(false);
   const [presetNameInput, setPresetNameInput] = useState("");
@@ -767,7 +740,7 @@ export default function App() {
       pendingRef.current.focus(); pendingRef.current.select();
     }
     prevSegIdx.current=curIdx;
-  },[pendSeg?.si]);
+  },[pendSeg]);
 
   // ── Track actions ─────────────────────────────────────────────────────────
   const addPiece = useCallback(p=>{
@@ -944,11 +917,6 @@ export default function App() {
   // ── Derived ───────────────────────────────────────────────────────────────
   const activePieces = tracks[activeTrack]?.pieces || [];
   const laneData = markerPlaced ? allLaneLengths(tracks,marker) : [];
-  const allClosed = markerPlaced && tracks.every(c=>{
-    if(!c.pieces.length) return false;
-    const origin=trackOrigin(marker,tracks.indexOf(c));
-    return isClosed(buildConnectors(c.pieces,origin));
-  });
 
   // ── File ops ──────────────────────────────────────────────────────────────
   const saveFile=()=>{
@@ -1004,10 +972,6 @@ export default function App() {
     Object.assign(document.createElement("a"),{href:url,download:`${layoutName.replace(/\s+/g,"_")}_BOM.csv`}).click();
     URL.revokeObjectURL(url);
   };
-
-  const Btn=({children,onClick,active,color,disabled,title})=>(
-      <button title={title} onClick={onClick} disabled={disabled} style={{background:active?(color?`rgba(${color},0.15)`:"rgba(29,78,216,0.2)"):"#1e293b",border:`1px solid ${active?(color?`rgb(${color})`:"#3b82f6"):"#334155"}`,borderRadius:4,padding:"4px 10px",color:disabled?"#334155":active?(color?`rgb(${color})`:"#60a5fa"):"#94a3b8",fontSize:11,fontFamily:"monospace",cursor:disabled?"default":"pointer"}}>{children}</button>
-  );
 
   const activeColor = TRACK_COLORS[activeTrack % TRACK_COLORS.length];
 
